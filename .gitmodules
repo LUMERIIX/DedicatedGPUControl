@@ -1,0 +1,3 @@
+[submodule "externals/DeviceManagement"]
+	path = externals/DeviceManagement
+	url = https://github.com/LUMERIIX/DeviceManagement
