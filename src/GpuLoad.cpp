@@ -6,16 +6,33 @@
 
 #include <windows.h>
 #include <iostream>
+#include <io.h>   // For access().
+#include <sys/types.h>  // For stat().
+#include <sys/stat.h>   // For stat().
+#include <string>
 
 // magic numbers, do not change them
 #define NVAPI_MAX_PHYSICAL_GPUS   64
 #define NVAPI_MAX_USAGES_PER_GPU  34
+#define UsageThreshold 60
 
 // function pointer types
 typedef int *(*NvAPI_QueryInterface_t)(unsigned int offset);
 typedef int (*NvAPI_Initialize_t)();
 typedef int (*NvAPI_EnumPhysicalGPUs_t)(int **handles, int *count);
 typedef int (*NvAPI_GPU_GetUsages_t)(int *handle, unsigned int *usages);
+
+void enableGPU()
+{
+    system("start powershell.exe C:\\data\Scripts\DedicatedGPUControl\src\En!En_DedicatedGPU.ps1 1");
+    system("cls");
+}
+
+void disableGPU()
+{
+    system("start powershell.exe C:\\data\Scripts\DedicatedGPUControl\src\En!En_DedicatedGPU.ps1 0");
+    system("cls");
+}
 
 int main()
 {
@@ -62,13 +79,28 @@ int main()
 
     // print GPU usage every second
 	int usages[NVAPI_MAX_PHYSICAL_GPUS];
-	for (int i = 0; i < 100; i++) ///==> while(1) in Background
+	bool enabled[NVAPI_MAX_PHYSICAL_GPUS] = {false};
+
+	system("start powershell.exe Set-ExecutionPolicy RemoteSigned \n"); //set PS Policy
+
+	while(1) //in Background
 	{
-		for(int j=0; j < gpuCount; j++)
+		for(int j=1; j < gpuCount; j++) ///Device 0 shouldn't be disabled
 		{
 			(*NvAPI_GPU_GetUsages)(gpuHandles[j], gpuUsages);
 			usages[j] = gpuUsages[3];
-			std::cout << "GPU Usage" << j << ": " << usages[j] << std::endl;
+//			std::cout << "GPU Usage" << j << ": " << usages[j] << std::endl;
+			if(usages[j] < UsageThreshold && enabled[j])
+            {
+//                disableGPU();
+                enabled[j] = false;
+            }
+
+            else if(!enabled[j])
+            {
+//                enableGPU();
+                enabled[j] = true;
+            }
 		}
 	Sleep(1000);    ///decrease log speed to reduce system load of script in Background
 	}
